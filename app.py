@@ -2,6 +2,9 @@ import os
 import json
 import uuid
 import shutil
+import pytz # type: ignore
+IST = pytz.timezone('Asia/Kolkata')
+
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 
@@ -87,7 +90,7 @@ def post_update():
             'id': uuid.uuid4().hex,
             'name': name,
             'message': message,
-            'timestamp': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')
+            'timestamp': datetime.now(IST).strftime('%d/%m/%Y, %H:%M:%S')
         })
         save_updates(updates)
 
