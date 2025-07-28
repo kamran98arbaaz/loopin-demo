@@ -42,12 +42,15 @@ def save_updates(updates_list):
 
 @app.route('/sync-backup')
 def sync_backup():
-    shutil.copy(UPDATES_FILE, BACKUP_FILE)
-    return "Backup synced! You can now redeploy safely."
+    try:
+        with open(UPDATES_FILE, 'r') as src, open(BACKUP_FILE, 'w') as dest:
+            dest.write(src.read())
+        return "✅ Backup synced successfully."
+    except Exception as e:
+        return f"❌ Backup failed: {e}"
 
 # who’s allowed to post
 authorized_users = ['Kamran Arbaz', 'Drishya CM', 'Abigail Das']
-
 
 @app.route('/')
 def home():
@@ -116,7 +119,7 @@ def edit_update(update_id):
 
     if request.method == 'POST':
         update['message'] = request.form['message'].strip()
-        update['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        update['timestamp'] = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
         save_updates(updates)
         flash('✏️ Update edited successfully.')
         return redirect(url_for('show_updates'))
