@@ -10,7 +10,7 @@ app.secret_key = 'replace-this-with-a-secure-random-string'
 app.config['APP_NAME'] = 'LoopIn'
 
 # where we'll store the updates
-UPDATES_FILE = '/var/data/updates.json'
+UPDATES_FILE = os.path.join(app.root_path, 'updates.json')
 BACKUP_FILE = os.path.join(app.root_path, 'updates_backup.json')
 
 if not os.path.exists(UPDATES_FILE):
@@ -40,6 +40,10 @@ def save_updates(updates_list):
     with open(UPDATES_FILE, 'w') as f:
         json.dump(updates_list, f, indent=2)
 
+@app.route('/sync-backup')
+def sync_backup():
+    shutil.copy(UPDATES_FILE, BACKUP_FILE)
+    return "Backup synced! You can now redeploy safely."
 
 # who’s allowed to post
 authorized_users = ['Kamran Arbaz', 'Drishya CM', 'Abigail Das']
@@ -60,12 +64,6 @@ def show_updates():
         updates=updates,
         current_user=current_user
     )
-
-@app.route('/sync-backup')
-def sync_backup():
-    shutil.copy(UPDATES_FILE, BACKUP_FILE)
-    return "Backup synced! You can now redeploy safely."
-
 
 @app.route('/post', methods=['GET', 'POST'])
 def post_update():
