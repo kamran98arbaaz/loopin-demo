@@ -1,6 +1,7 @@
 import os
 import json
 import uuid
+import shutil
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 
@@ -9,22 +10,33 @@ app.secret_key = 'replace-this-with-a-secure-random-string'
 app.config['APP_NAME'] = 'LoopIn'
 
 # where we'll store the updates
-UPDATES_FILE = os.path.join(app.root_path, 'updates.json')
+UPDATES_FILE = '/var/data/updates.json'
+BACKUP_FILE = os.path.join(app.root_path, 'updates_backup.json')
 
-# helpers to load & save from JSON
+if not os.path.exists(UPDATES_FILE):
+    os.makedirs(os.path.dirname(UPDATES_FILE), exist_ok=True)
+    shutil.copy(BACKUP_FILE, UPDATES_FILE)
+    print("✅ Restored updates.json from backup")
+
+# Load updates from /var/data/updates.json
 def load_updates():
+    # If the file doesn't exist, create it with an empty list
     if not os.path.exists(UPDATES_FILE):
-        # create the file if it's not there
+        os.makedirs(os.path.dirname(UPDATES_FILE), exist_ok=True)
         with open(UPDATES_FILE, 'w') as f:
-            json.dump([], f)
+            json.dump([], f, indent=2)
         return []
-    with open(UPDATES_FILE, 'r') as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
 
+    # Load the file, handle bad JSON gracefully
+    try:
+        with open(UPDATES_FILE, 'r') as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        return []
+
+# Save updates to /var/data/updates.json
 def save_updates(updates_list):
+    os.makedirs(os.path.dirname(UPDATES_FILE), exist_ok=True)
     with open(UPDATES_FILE, 'w') as f:
         json.dump(updates_list, f, indent=2)
 
@@ -48,6 +60,11 @@ def show_updates():
         updates=updates,
         current_user=current_user
     )
+
+@app.route('/sync-backup')
+def sync_backup():
+    shutil.copy(UPDATES_FILE, BACKUP_FILE)
+    return "Backup synced! You can now redeploy safely."
 
 
 @app.route('/post', methods=['GET', 'POST'])
